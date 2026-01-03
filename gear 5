@@ -1,4 +1,4 @@
--- LocalScript - Luffy Gear 5 Mod
+-- LocalScript - Luffy Gear 5 Mod (ARM ONLY)
 -- Đặt trong StarterPlayerScripts hoặc StarterGui
 
 local Players = game:GetService("Players")
@@ -83,11 +83,8 @@ armCorner.Parent = armToggle
 -- Biến trạng thái
 local modEnabled = false
 local armExtendEnabled = false
-local armLoop = nil
-
--- Lưu vị trí gốc của tay
-local originalLeftArmCFrame = nil
-local originalRightArmCFrame = nil
+local armLoopConnection = nil
+local armSpawnLoop = false
 
 -- Hàm lấy character mới
 local function getCharacter()
@@ -99,61 +96,82 @@ player.CharacterAdded:Connect(function(char)
 	character = char
 end)
 
--- Hàm kéo tay ra sau
+-- Hàm kéo CÁNH TAY ra sau (chỉ cánh tay thôi!)
 local function extendArms()
 	local char = getCharacter()
 	if not char then return end
 	
 	local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
-	local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftHand") or char:FindFirstChild("LeftUpperArm")
-	local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightHand") or char:FindFirstChild("RightUpperArm")
+	if not humanoidRootPart then return end
 	
-	if humanoidRootPart and (leftArm or rightArm) then
-		local lookVector = humanoidRootPart.CFrame.LookVector
-		local backDirection = -lookVector * 20 -- Gấp 20 lần khoảng cách
-		
-		if leftArm then
-			leftArm.CFrame = leftArm.CFrame + backDirection
-		end
-		
-		if rightArm then
-			rightArm.CFrame = rightArm.CFrame + backDirection
-		end
+	-- Lấy hướng nhìn ngược lại (ra sau)
+	local backDirection = -humanoidRootPart.CFrame.LookVector
+	
+	-- R6 Rig (cũ)
+	local leftArmR6 = char:FindFirstChild("Left Arm")
+	local rightArmR6 = char:FindFirstChild("Right Arm")
+	
+	-- R15 Rig (mới) - Lấy các phần của cánh tay
+	local leftUpperArm = char:FindFirstChild("LeftUpperArm")
+	local leftLowerArm = char:FindFirstChild("LeftLowerArm")
+	local leftHand = char:FindFirstChild("LeftHand")
+	
+	local rightUpperArm = char:FindFirstChild("RightUpperArm")
+	local rightLowerArm = char:FindFirstChild("RightLowerArm")
+	local rightHand = char:FindFirstChild("RightHand")
+	
+	-- Khoảng cách kéo ra sau (gấp 20 lần)
+	local extendDistance = 20
+	local offset = backDirection * extendDistance
+	
+	-- Di chuyển cánh tay R6
+	if leftArmR6 then
+		leftArmR6.CFrame = leftArmR6.CFrame + offset
+	end
+	
+	if rightArmR6 then
+		rightArmR6.CFrame = rightArmR6.CFrame + offset
+	end
+	
+	-- Di chuyển cánh tay R15 (từng phần)
+	if leftUpperArm then
+		leftUpperArm.CFrame = leftUpperArm.CFrame + offset
+	end
+	if leftLowerArm then
+		leftLowerArm.CFrame = leftLowerArm.CFrame + offset
+	end
+	if leftHand then
+		leftHand.CFrame = leftHand.CFrame + offset
+	end
+	
+	if rightUpperArm then
+		rightUpperArm.CFrame = rightUpperArm.CFrame + offset
+	end
+	if rightLowerArm then
+		rightLowerArm.CFrame = rightLowerArm.CFrame + offset
+	end
+	if rightHand then
+		rightHand.CFrame = rightHand.CFrame + offset
 	end
 end
 
--- Hàm reset tay về vị trí cũ
-local function resetArms()
-	-- Tay sẽ tự động về vị trí cũ khi ngừng can thiệp
-	-- Do game tự xử lý
-end
-
--- Hàm bắt đầu loop kéo tay
+-- Hàm bắt đầu loop kéo tay mỗi 0.1 giây
 local function startArmLoop()
-	if armLoop then return end
+	armSpawnLoop = true
 	
-	armLoop = RunService.Heartbeat:Connect(function()
-		if armExtendEnabled and modEnabled then
-			extendArms()
-		end
-	end)
-	
-	-- Thêm loop 0.1 giây để đảm bảo
+	-- Loop chính chạy mỗi 0.1 giây
 	spawn(function()
-		while armExtendEnabled and modEnabled do
+		while armSpawnLoop and armExtendEnabled and modEnabled do
 			extendArms()
-			wait(0.1)
+			wait(0.1) -- Mỗi 0.1 giây tele tay ra sau
 		end
 	end)
 end
 
 -- Hàm dừng loop kéo tay
 local function stopArmLoop()
-	if armLoop then
-		armLoop:Disconnect()
-		armLoop = nil
-	end
-	resetArms()
+	armSpawnLoop = false
+	-- Tay sẽ tự về vị trí cũ do game xử lý
 end
 
 -- Xử lý nút toggle mod chính
@@ -194,4 +212,4 @@ armToggle.MouseButton1Click:Connect(function()
 	end
 end)
 
-print("Luffy Gear 5 Mod đã load thành công!")
+print("Luffy Gear 5 Mod - ARM ONLY đã load thành công!")
