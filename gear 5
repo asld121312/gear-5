@@ -1,0 +1,197 @@
+-- LocalScript - Luffy Gear 5 Mod
+-- Đặt trong StarterPlayerScripts hoặc StarterGui
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Tạo ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "LuffyGear5GUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Tạo Frame chính
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 200, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+-- Bo góc Frame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+-- Tiêu đề
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+title.BorderSizePixel = 0
+title.Text = "LUFFY GEAR 5"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = title
+
+-- Nút Toggle chính (Mod On/Off)
+local modToggle = Instance.new("TextButton")
+modToggle.Name = "ModToggle"
+modToggle.Size = UDim2.new(0.8, 0, 0, 35)
+modToggle.Position = UDim2.new(0.1, 0, 0, 50)
+modToggle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+modToggle.BorderSizePixel = 0
+modToggle.Text = "OFF"
+modToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+modToggle.TextSize = 18
+modToggle.Font = Enum.Font.GothamBold
+modToggle.Parent = mainFrame
+
+local modCorner = Instance.new("UICorner")
+modCorner.CornerRadius = UDim.new(0, 8)
+modCorner.Parent = modToggle
+
+-- Nút Kéo tay ra sau
+local armToggle = Instance.new("TextButton")
+armToggle.Name = "ArmToggle"
+armToggle.Size = UDim2.new(0.8, 0, 0, 35)
+armToggle.Position = UDim2.new(0.1, 0, 0, 95)
+armToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+armToggle.BorderSizePixel = 0
+armToggle.Text = "Kéo ra sau (OFF)"
+armToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+armToggle.TextSize = 14
+armToggle.Font = Enum.Font.GothamSemibold
+armToggle.Visible = false
+armToggle.Parent = mainFrame
+
+local armCorner = Instance.new("UICorner")
+armCorner.CornerRadius = UDim.new(0, 8)
+armCorner.Parent = armToggle
+
+-- Biến trạng thái
+local modEnabled = false
+local armExtendEnabled = false
+local armLoop = nil
+
+-- Lưu vị trí gốc của tay
+local originalLeftArmCFrame = nil
+local originalRightArmCFrame = nil
+
+-- Hàm lấy character mới
+local function getCharacter()
+	character = player.Character or player.CharacterAdded:Wait()
+	return character
+end
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+end)
+
+-- Hàm kéo tay ra sau
+local function extendArms()
+	local char = getCharacter()
+	if not char then return end
+	
+	local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+	local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftHand") or char:FindFirstChild("LeftUpperArm")
+	local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightHand") or char:FindFirstChild("RightUpperArm")
+	
+	if humanoidRootPart and (leftArm or rightArm) then
+		local lookVector = humanoidRootPart.CFrame.LookVector
+		local backDirection = -lookVector * 20 -- Gấp 20 lần khoảng cách
+		
+		if leftArm then
+			leftArm.CFrame = leftArm.CFrame + backDirection
+		end
+		
+		if rightArm then
+			rightArm.CFrame = rightArm.CFrame + backDirection
+		end
+	end
+end
+
+-- Hàm reset tay về vị trí cũ
+local function resetArms()
+	-- Tay sẽ tự động về vị trí cũ khi ngừng can thiệp
+	-- Do game tự xử lý
+end
+
+-- Hàm bắt đầu loop kéo tay
+local function startArmLoop()
+	if armLoop then return end
+	
+	armLoop = RunService.Heartbeat:Connect(function()
+		if armExtendEnabled and modEnabled then
+			extendArms()
+		end
+	end)
+	
+	-- Thêm loop 0.1 giây để đảm bảo
+	spawn(function()
+		while armExtendEnabled and modEnabled do
+			extendArms()
+			wait(0.1)
+		end
+	end)
+end
+
+-- Hàm dừng loop kéo tay
+local function stopArmLoop()
+	if armLoop then
+		armLoop:Disconnect()
+		armLoop = nil
+	end
+	resetArms()
+end
+
+-- Xử lý nút toggle mod chính
+modToggle.MouseButton1Click:Connect(function()
+	modEnabled = not modEnabled
+	
+	if modEnabled then
+		modToggle.Text = "ON"
+		modToggle.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+		armToggle.Visible = true
+	else
+		modToggle.Text = "OFF"
+		modToggle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+		armToggle.Visible = false
+		
+		-- Tắt luôn arm extend nếu mod tắt
+		armExtendEnabled = false
+		armToggle.Text = "Kéo ra sau (OFF)"
+		armToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+		stopArmLoop()
+	end
+end)
+
+-- Xử lý nút toggle kéo tay
+armToggle.MouseButton1Click:Connect(function()
+	if not modEnabled then return end
+	
+	armExtendEnabled = not armExtendEnabled
+	
+	if armExtendEnabled then
+		armToggle.Text = "Kéo ra sau (ON)"
+		armToggle.BackgroundColor3 = Color3.fromRGB(50, 200, 255)
+		startArmLoop()
+	else
+		armToggle.Text = "Kéo ra sau (OFF)"
+		armToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+		stopArmLoop()
+	end
+end)
+
+print("Luffy Gear 5 Mod đã load thành công!")
